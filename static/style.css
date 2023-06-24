@@ -1,0 +1,18 @@
+/* Add your CSS styles here */
+h1 {
+    color: #333;
+}
+
+input {
+    margin-bottom: 10px;
+}
+
+button {
+    background-color: #333;
+    color: #fff;
+    padding: 10px 20px;
+    border: none;
+    cursor: pointer;
+}
+
+/* Additional styles */

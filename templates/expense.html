@@ -1,0 +1,18 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Personal Finance Tracker - Expense Tracking</title>
+    <link rel="stylesheet" type="text/css" href="{{ url_for('static', filename='css/style.css') }}">
+</head>
+<body>
+    <h1>Expense Tracking</h1>
+    <form action="{{ url_for('add_expense') }}" method="POST">
+        <!-- Expense input fields here -->
+        <input type="text" name="amount" placeholder="Amount">
+        <input type="text" name="category" placeholder="Category">
+        <input type="text" name="description" placeholder="Description">
+        <button type="submit">Add Expense</button>
+    </form>
+    <script src="{{ url_for('static', filename='js/expense.js') }}"></script>
+</body>
+</html>

@@ -43,8 +43,7 @@ as expense tracking, income tracking, budget management, goal setting, and data 
 
 4. Configure the application:
 
-- Rename `config.example.py` to `config.py`.
-- Update the MongoDB connection details in `config.py`.
+- Update the MongoDB connection details in `db_connection.py`.
 
 5. Run the application:
    python app.py

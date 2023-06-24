@@ -1,0 +1,15 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Personal Finance Tracker - Dashboard</title>
+    <link rel="stylesheet" type="text/css" href="{{ url_for('static', filename='css/style.css') }}">
+</head>
+<body>
+    <h1>Welcome to your Dashboard</h1>
+    <!-- Display user's financial information here -->
+    <div id="account-balances"></div>
+    <div id="income-chart"></div>
+    <div id="expense-chart"></div>
+    <script src="{{ url_for('static', filename='js/dashboard.js') }}"></script>
+</body>
+</html>
