@@ -61,7 +61,3 @@ as expense tracking, income tracking, budget management, goal setting, and data 
 - Seaborn: Data visualization library used for generating charts and graphs.
 
 ## Screenshots
-
-## License
-
-This project is licensed under the [MIT License](LICENSE).
