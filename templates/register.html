@@ -6,6 +6,9 @@
 </head>
 <body>
     <h1>User Registration</h1>
+    {% if error_message %}
+    <p class="error">{{ error_message }}</p>
+    {% endif %}
     <form action="{{ url_for('register') }}" method="POST">
         <!-- Registration input fields here -->
         <input type="text" name="username" placeholder="Username">

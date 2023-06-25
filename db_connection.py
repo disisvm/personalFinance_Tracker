@@ -16,3 +16,5 @@ client = MongoClient(connection_string)
 
 # Access the "personalFinance_Tracker" database
 db = client.personalFinance_Tracker
+
+Collections = db.list_collection_names()
