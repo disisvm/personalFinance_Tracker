@@ -3,7 +3,6 @@ from pymongo import MongoClient
 import os
 
 # ----------- DB Connection -------------
-
 load_dotenv(find_dotenv())
 
 password = os.environ.get("mongo_pwd")
