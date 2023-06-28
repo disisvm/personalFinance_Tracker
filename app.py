@@ -1,4 +1,4 @@
-from datetime import datetime
+from datetime import datetime, date
 
 from flask import Flask, render_template, request, redirect, url_for
 
@@ -136,14 +136,37 @@ def add_expense(username):
 @app.route('/dashboard/<username>')
 def dashboard(username):
     # Retrieve user's financial information from the database
-    # Replace the placeholders below with the actual data retrieval logic
-    account_balances = {'Savings': 5000, 'Checking': 2500, 'Investments': 10000}
+    list_of_accounts = accounts_list(username)
+    incomeRecords = list(incomeCollection.find({"user": username}))
+    expenseRecords = list(expenseCollection.find({"user": username}))
+
+    accounts_summary = {}
+    for account in list_of_accounts:
+        account_income = sum(record['amount'] for record in incomeRecords if record['account'] == account)
+        account_expense = sum(record['amount'] for record in expenseRecords if record['account'] == account)
+        accounts_summary[account] = {
+            'income': account_income,
+            'expense': account_expense,
+            'balance': account_income - account_expense
+        }
 
     # Retrieve income and expense records from the database for the specific user
-    income_records = list(incomeCollection.find({'username': username}))
-    expense_records = list(expenseCollection.find({'username': username}))
+    income_records = list(incomeCollection.find({
+        "$and": [
+            {"user": username},
+            {"date": {"$gte": datetime.combine(date.today(), datetime.min.time()),
+                      "$lt": datetime.combine(date.today(), datetime.max.time())}}
+        ]
+    }))
+    expense_records = list(expenseCollection.find({
+        "$and": [
+            {"user": username},
+            {"date": {"$gte": datetime.combine(date.today(), datetime.min.time()),
+                      "$lt": datetime.combine(date.today(), datetime.max.time())}}
+        ]
+    }))
 
-    return render_template('dashboard.html', username=username, account_balances=account_balances,
+    return render_template('dashboard.html', username=username, accounts_summary=accounts_summary,
                            income_records=income_records, expense_records=expense_records)
 
 

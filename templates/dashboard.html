@@ -5,30 +5,71 @@
     <link rel="stylesheet" type="text/css" href="{{ url_for('static', filename='css/style.css') }}">
 </head>
 <body>
-    <h1>Welcome, {{ username }}</h1>
+    <h1>Welcome, {{ username }}!</h1>
 
-    <h2>Account Balances</h2>
-    <ul>
-        {% for account, balance in account_balances.items() %}
-            <li>{{ account }}: ${{ balance }}</li>
+    <h2>Account Summary</h2>
+    <table>
+        <tr>
+            <th>Account</th>
+            <th>Income</th>
+            <th>Expense</th>
+            <th>Balance</th>
+        </tr>
+        {% for account, summary in accounts_summary.items() %}
+        <tr>
+            <td>{{ account }}</td>
+            <td>{{ summary['income'] }}</td>
+            <td>{{ summary['expense'] }}</td>
+            <td>{{ summary['balance'] }}</td>
+        </tr>
         {% endfor %}
-    </ul>
+    </table>
 
-    <h2>Income Records</h2>
-    <ul>
-        {% for income_record in income_records %}
-            <li>Amount: ${{ income_record.amount }}, Description: {{ income_record.description }}, Account: {{ income_record.account }}</li>
-        {% endfor %}
-    </ul>
-
-    <h2>Expense Records</h2>
-    <ul>
-        {% for expense_record in expense_records %}
-            <li>Amount: ${{ expense_record.amount }}, Description: {{ expense_record.description }}, Account: {{ expense_record.account }}</li>
-        {% endfor %}
-    </ul>
-
+    <h2>Today's Income Records</h2>
     <a href="{{ url_for('add_income', username=username) }}">Add Income</a>
+    <br>
+    <table>
+        <tr>
+            <th>Amount</th>
+            <th>Description</th>
+            <th>Account</th>
+            <th>Category</th>
+            <th>Date</th>
+        </tr>
+        {% for record in income_records %}
+        <tr>
+            <td>{{ record['amount'] }}</td>
+            <td>{{ record['description'] }}</td>
+            <td>{{ record['account'] }}</td>
+            <td>{{ record['category'] }}</td>
+            <td>{{ record['date'] }}</td>
+        </tr>
+        {% endfor %}
+    </table>
+
+    <h2>Today's Expense Records</h2>
     <a href="{{ url_for('add_expense', username=username) }}">Add Expense</a>
+    <br>
+    <table>
+        <tr>
+            <th>Amount</th>
+            <th>Description</th>
+            <th>Account</th>
+            <th>Category</th>
+            <th>Date</th>
+        </tr>
+        {% for record in expense_records %}
+        <tr>
+            <td>{{ record['amount'] }}</td>
+            <td>{{ record['description'] }}</td>
+            <td>{{ record['account'] }}</td>
+            <td>{{ record['category'] }}</td>
+            <td>{{ record['date'] }}</td>
+        </tr>
+        {% endfor %}
+    </table>
+
+
+
 </body>
 </html>
