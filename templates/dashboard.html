@@ -5,11 +5,30 @@
     <link rel="stylesheet" type="text/css" href="{{ url_for('static', filename='css/style.css') }}">
 </head>
 <body>
-    <h1>Welcome to your Dashboard</h1>
-    <!-- Display user's financial information here -->
-    <div id="account-balances"></div>
-    <div id="income-chart"></div>
-    <div id="expense-chart"></div>
-    <script src="{{ url_for('static', filename='js/dashboard.js') }}"></script>
+    <h1>Welcome, {{ username }}</h1>
+
+    <h2>Account Balances</h2>
+    <ul>
+        {% for account, balance in account_balances.items() %}
+            <li>{{ account }}: ${{ balance }}</li>
+        {% endfor %}
+    </ul>
+
+    <h2>Income Records</h2>
+    <ul>
+        {% for income_record in income_records %}
+            <li>Amount: ${{ income_record.amount }}, Description: {{ income_record.description }}, Account: {{ income_record.account }}</li>
+        {% endfor %}
+    </ul>
+
+    <h2>Expense Records</h2>
+    <ul>
+        {% for expense_record in expense_records %}
+            <li>Amount: ${{ expense_record.amount }}, Description: {{ expense_record.description }}, Account: {{ expense_record.account }}</li>
+        {% endfor %}
+    </ul>
+
+    <a href="{{ url_for('add_income', username=username) }}">Add Income</a>
+    <a href="{{ url_for('add_expense', username=username) }}">Add Expense</a>
 </body>
 </html>

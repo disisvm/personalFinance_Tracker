@@ -1,18 +1,21 @@
 <!DOCTYPE html>
 <html>
 <head>
-    <title>Personal Finance Tracker - Expense Tracking</title>
+    <title>Personal Finance Tracker - Add Expense</title>
     <link rel="stylesheet" type="text/css" href="{{ url_for('static', filename='css/style.css') }}">
 </head>
 <body>
-    <h1>Expense Tracking</h1>
-    <form action="{{ url_for('add_expense') }}" method="POST">
-        <!-- Expense input fields here -->
-        <input type="text" name="amount" placeholder="Amount">
-        <input type="text" name="category" placeholder="Category">
-        <input type="text" name="description" placeholder="Description">
+    <h1>Add Expense</h1>
+    <form action="{{ url_for('add_expense', username=username) }}" method="POST">
+        <input type="number" step="0.01" name="amount" placeholder="Amount" required>
+        <input type="text" name="description" placeholder="Description" required>
+        <select name="account" required>
+            {% for account in accounts %}
+                <option value="{{ account }}">{{ account }}</option>
+            {% endfor %}
+        </select>
         <button type="submit">Add Expense</button>
     </form>
-    <script src="{{ url_for('static', filename='js/expense.js') }}"></script>
+    <a href="{{ url_for('dashboard', username=username) }}">Back to Dashboard</a>
 </body>
 </html>
