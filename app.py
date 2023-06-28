@@ -1,3 +1,5 @@
+from datetime import datetime
+
 from flask import Flask, render_template, request, redirect, url_for
 
 import db_connection as mongo
@@ -10,10 +12,23 @@ incomeCollection = mongo.db.income
 expenseCollection = mongo.db.expense
 
 
-def accountsCollection(username):
-
+def accounts_list(username):
     accountsList = list(mongo.db.accounts.find({"$or": [{"user": username}, {"default": True}]}))
     values_list = [d['name'] for d in accountsList if 'name' in d]
+
+    return values_list
+
+
+def income_category(username):
+    income_categoryList = list(mongo.db.incomeCategory.find({"$or": [{"user": username}, {"default": True}]}))
+    values_list = [d['name'] for d in income_categoryList if 'name' in d]
+
+    return values_list
+
+
+def expense_category(username):
+    income_categoryList = list(mongo.db.incomeCategory.find({"$or": [{"user": username}, {"default": True}]}))
+    values_list = [d['name'] for d in income_categoryList if 'name' in d]
 
     return values_list
 
@@ -80,14 +95,20 @@ def add_income(username):
         amount = float(request.form['amount'])
         description = request.form['description']
         account = request.form['account']
+        category = request.form['category']
 
         # Insert income record into the database
-        incomeCollection.insert_one(
-            {'user': username, 'amount': amount, 'description': description, 'account': account})
+        incomeCollection.insert_one({'user': username,
+                                     'amount': amount,
+                                     'description': description,
+                                     'account': account,
+                                     'category': category,
+                                     'date': datetime.now()})
 
         return redirect(url_for('dashboard', username=username))
 
-    return render_template('income.html', accounts=accountsCollection(username), username=username)
+    return render_template('income.html', accounts=accounts_list(username), username=username,
+                           categories=income_category(username))
 
 
 @app.route('/expenses/<username>', methods=['GET', 'POST'])
@@ -96,14 +117,20 @@ def add_expense(username):
         amount = float(request.form['amount'])
         description = request.form['description']
         account = request.form['account']
+        category = request.form['category']
 
-        # Insert expense record into the database
-        expenseCollection.insert_one(
-            {'user': username, 'amount': amount, 'description': description, 'account': account})
+        # Insert income record into the database
+        expenseCollection.insert_one({'user': username,
+                                      'amount': amount,
+                                      'description': description,
+                                      'account': account,
+                                      'category': category,
+                                      'date': datetime.now()})
 
         return redirect(url_for('dashboard', username=username))
 
-    return render_template('expenses.html', accounts=accountsCollection(username), username=username)
+    return render_template('expenses.html', accounts=accounts_list(username), username=username,
+                           categories=expense_category(username))
 
 
 @app.route('/dashboard/<username>')
