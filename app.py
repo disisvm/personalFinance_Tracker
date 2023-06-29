@@ -133,6 +133,19 @@ def add_expense(username):
                            categories=expense_category(username))
 
 
+@app.route('/logout', methods=['POST', 'GET'])
+def logout():
+
+    # Redirect the user to the login page
+    return redirect(url_for('login'))
+
+
+@app.route('/settings', methods=['POST', 'GET'])
+def settings():
+
+    # Redirect the user to the login page
+    return redirect(url_for('login'))
+
 @app.route('/dashboard/<username>')
 def dashboard(username):
     # Retrieve user's financial information from the database
