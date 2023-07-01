@@ -58,6 +58,5 @@ as expense tracking, income tracking, budget management, goal setting, and data 
 - Flask: Web framework used for building the application.
 - MongoDB: NoSQL database used for storing financial data.
 - Seaborn: Data visualization library used for generating charts and graphs.
-- HTML: Mark-up language used for templates in Flask.
 
 ## Screenshots
