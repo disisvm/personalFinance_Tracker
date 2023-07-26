@@ -120,7 +120,7 @@
             <th>Description</th>
             <th>Account</th>
             <th>Category</th>
-            <th>Date</th>
+
         </tr>
         {% for record in income_records %}
         <tr>
@@ -128,7 +128,7 @@
             <td>{{ record['description'] }}</td>
             <td>{{ record['account'] }}</td>
             <td>{{ record['category'] }}</td>
-            <td>{{ record['date'] }}</td>
+
         </tr>
         {% endfor %}
     </table>
@@ -142,7 +142,7 @@
             <th>Description</th>
             <th>Account</th>
             <th>Category</th>
-            <th>Date</th>
+
         </tr>
         {% for record in expense_records %}
         <tr>
@@ -150,7 +150,7 @@
             <td>{{ record['description'] }}</td>
             <td>{{ record['account'] }}</td>
             <td>{{ record['category'] }}</td>
-            <td>{{ record['date'] }}</td>
+
         </tr>
         {% endfor %}
     </table>
