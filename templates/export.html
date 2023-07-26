@@ -1,0 +1,80 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Personal Finance Tracker - Export Data</title>
+    <link rel="stylesheet" type="text/css" href="{{ url_for('static', filename='css/style.css') }}">
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            line-height: 1.6;
+            margin: 20px;
+        }
+
+        h1 {
+            margin-bottom: 20px;
+        }
+
+        form {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 20px;
+            align-items: center;
+            margin-bottom: 20px;
+        }
+
+        label {
+            width: 100px;
+        }
+
+        input[type="date"],
+        select {
+            padding: 5px;
+            border: 1px solid #ccc;
+            border-radius: 5px;
+        }
+
+        button {
+            background-color: #007bff;
+            color: #fff;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 5px;
+            cursor: pointer;
+            transition: background-color 0.3s;
+        }
+
+        button:hover {
+            background-color: #0056b3;
+        }
+
+        a {
+            color: #007bff;
+            text-decoration: none;
+            margin-top: 10px;
+            display: block;
+        }
+    </style>
+</head>
+<body>
+    <h1>Export Data</h1>
+    <form action="{{ url_for('export_data', username=username) }}" method="POST">
+        <label for="start_date">Start Date:</label>
+        <input type="date" id="start_date" name="start_date">
+
+        <label for="end_date">End Date:</label>
+        <input type="date" id="end_date" name="end_date">
+
+        <label for="account">Account:</label>
+        <select name="account">
+            <option value="">All Accounts</option>
+            {% for account in accounts %}
+                <option value="{{ account }}">{{ account }}</option>
+            {% endfor %}
+        </select>
+
+        <button type="submit" name="export_pdf" value="true">Export as PDF</button>
+        <button type="submit" name="export_csv" value="true">Export as CSV</button>
+    </form>
+    <a href="{{ url_for('dashboard', username=username) }}"> << Back to Dashboard</a>
+</body>
+</html>

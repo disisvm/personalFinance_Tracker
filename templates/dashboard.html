@@ -86,6 +86,7 @@
                 <span class="dropdown-caret"></span>
             </button>
             <ul class="profile-dropdown-menu">
+                <li><a href="{{ url_for('export_data', username = username) }}">Export Data</a></li>
                 <li><a href="{{ url_for('settings') }}">Settings</a></li>
                 <li><a href="{{ url_for('logout') }}">Logout</a></li>
             </ul>

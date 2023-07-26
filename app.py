@@ -1,6 +1,10 @@
+import csv
 from datetime import datetime, date
+from io import BytesIO, StringIO
 
-from flask import Flask, render_template, request, redirect, url_for
+from flask import Flask, render_template, request, redirect, url_for, send_file, Response
+from reportlab.lib.pagesizes import letter
+from reportlab.pdfgen import canvas
 
 import db_connection as mongo
 
@@ -133,18 +137,6 @@ def add_expense(username):
                            categories=expense_category(username))
 
 
-@app.route('/logout', methods=['POST', 'GET'])
-def logout():
-    # Redirect the user to the login page
-    return redirect(url_for('login'))
-
-
-@app.route('/settings', methods=['POST', 'GET'])
-def settings():
-    # Redirect the user to the login page
-    return redirect(url_for('login'))
-
-
 @app.route('/dashboard/<username>')
 def dashboard(username):
     # Retrieve user's financial information from the database
@@ -180,6 +172,112 @@ def dashboard(username):
 
     return render_template('dashboard.html', username=username, accounts_summary=accounts_summary,
                            income_records=income_records, expense_records=expense_records)
+
+
+@app.route('/export/<username>', methods=['GET', 'POST'])
+def export_data(username):
+    accounts = accounts_list(username)
+
+    if request.method == 'POST':
+        # Handle form submission
+        start_date_str = request.form['start_date']
+        end_date_str = request.form['end_date']
+        account = request.form['account']
+
+        start_date = datetime.strptime(start_date_str, '%Y-%m-%d') if start_date_str else None
+        end_date = datetime.strptime(end_date_str, '%Y-%m-%d') if end_date_str else None
+
+        # Get filtered income and expense records from the database
+        income_records = list(incomeCollection.find({
+            "$and": [
+                {"user": username},
+                {"date": {"$gte": start_date, "$lte": end_date}} if start_date and end_date else {},
+                {"account": account} if account else {}
+            ]
+        }))
+
+        expense_records = list(expenseCollection.find({
+            "$and": [
+                {"user": username},
+                {"date": {"$gte": start_date, "$lte": end_date}} if start_date and end_date else {},
+                {"account": account} if account else {}
+            ]
+        }))
+
+        if request.form.get('export_pdf') == 'true':
+            # Generate PDF
+            buffer = BytesIO()
+            c = canvas.Canvas(buffer, pagesize=letter)
+
+            # Add income records to PDF
+            c.drawString(100, 800, 'Income Records:')
+            y_offset = 780
+            for record in income_records:
+                c.drawString(100, y_offset, f"Amount: {record['amount']}, Description: {record['description']}")
+                y_offset -= 15
+
+            # Add expense records to PDF
+            c.drawString(100, y_offset, 'Expense Records:')
+            y_offset -= 20
+            for record in expense_records:
+                c.drawString(100, y_offset, f"Amount: {record['amount']}, Description: {record['description']}")
+                y_offset -= 15
+
+            c.save()
+            buffer.seek(0)
+
+            return send_file(buffer, mimetype='application/pdf', as_attachment=True,
+                             download_name=f'export_{username}.pdf')
+
+        else:
+            # Generate CSV
+            csv_data = generate_csv(income_records, expense_records)
+
+            # Prepare the response as a downloadable file
+            response = Response(
+                csv_data,
+                headers={
+                    "Content-Disposition": "attachment; filename=financial_data.csv",
+                    "Content-Type": "text/csv",
+                }
+            )
+            return response
+
+    return render_template('export.html', accounts=accounts, username=username)
+
+
+def generate_csv(income_records, expense_records):
+    # Prepare the CSV data using StringIO
+    csv_buffer = StringIO()
+    csv_writer = csv.writer(csv_buffer)
+
+    # Write header row
+    csv_writer.writerow(["Type", "Amount", "Description", "Account", "Category", "Date"])
+
+    # Write income records
+    for record in income_records:
+        csv_writer.writerow(["Income", record["amount"], record["description"], record["account"], record["category"], record["date"]])
+
+    # Write expense records
+    for record in expense_records:
+        csv_writer.writerow(["Expense", record["amount"], record["description"], record["account"], record["category"], record["date"]])
+
+    # Get the CSV data as a string
+    csv_data = csv_buffer.getvalue()
+
+    return csv_data
+
+
+@app.route('/logout', methods=['POST', 'GET'])
+def logout():
+    # Redirect the user to the login page
+    return redirect(url_for('login'))
+
+
+@app.route('/settings', methods=['POST', 'GET'])
+def settings():
+    # Redirect the user to the login page
+    return redirect(url_for('login'))
 
 
 if __name__ == '__main__':
