@@ -2,7 +2,8 @@ import csv
 from datetime import datetime, date
 from io import BytesIO, StringIO
 
-from flask import Flask, render_template, request, redirect, url_for, send_file, Response
+from flask import Flask, send_file, Response
+from flask import request, redirect, url_for, render_template
 from reportlab.lib.pagesizes import letter
 from reportlab.pdfgen import canvas
 
@@ -12,8 +13,10 @@ app = Flask(__name__)
 
 # Collection variables
 users = mongo.db.users
-incomeCollection = mongo.db.income
-expenseCollection = mongo.db.expense
+transactionsCollection = mongo.db.transactions
+incomeCategoryCollection = mongo.db.incomeCategory
+expenseCategoryCollection = mongo.db.expenseCategory
+goalCollection = mongo.db.goals
 
 
 def accounts_list(username):
@@ -24,15 +27,15 @@ def accounts_list(username):
 
 
 def income_category(username):
-    income_categoryList = list(mongo.db.incomeCategory.find({"$or": [{"user": username}, {"default": True}]}))
+    income_categoryList = list(incomeCategoryCollection.find({"$or": [{"user": username}, {"default": True}]}))
     values_list = [d['name'] for d in income_categoryList if 'name' in d]
 
     return values_list
 
 
 def expense_category(username):
-    income_categoryList = list(mongo.db.incomeCategory.find({"$or": [{"user": username}, {"default": True}]}))
-    values_list = [d['name'] for d in income_categoryList if 'name' in d]
+    expense_categoryList = list(expenseCategoryCollection.find({"$or": [{"user": username}, {"default": True}]}))
+    values_list = [d['name'] for d in expense_categoryList if 'name' in d]
 
     return values_list
 
@@ -102,12 +105,14 @@ def add_income(username):
         category = request.form['category']
 
         # Insert income record into the database
-        incomeCollection.insert_one({'user': username,
-                                     'amount': amount,
-                                     'description': description,
-                                     'account': account,
-                                     'category': category,
-                                     'date': datetime.now()})
+        transactionsCollection.insert_one({'user': username,
+                                           'amount': amount,
+                                           'description': description,
+                                           'account': account,
+                                           'income_category': category,
+                                           'expense_category': '',
+                                           'transaction_type': 'income',
+                                           'date': datetime.now()})
 
         return redirect(url_for('dashboard', username=username))
 
@@ -124,12 +129,14 @@ def add_expense(username):
         category = request.form['category']
 
         # Insert income record into the database
-        expenseCollection.insert_one({'user': username,
-                                      'amount': amount,
-                                      'description': description,
-                                      'account': account,
-                                      'category': category,
-                                      'date': datetime.now()})
+        transactionsCollection.insert_one({'user': username,
+                                           'amount': amount,
+                                           'description': description,
+                                           'account': account,
+                                           'income_category': '',
+                                           'expense_category': category,
+                                           'transaction_type': 'expense',
+                                           'date': datetime.now()})
 
         return redirect(url_for('dashboard', username=username))
 
@@ -141,8 +148,8 @@ def add_expense(username):
 def dashboard(username):
     # Retrieve user's financial information from the database
     list_of_accounts = accounts_list(username)
-    incomeRecords = list(incomeCollection.find({"user": username}))
-    expenseRecords = list(expenseCollection.find({"user": username}))
+    incomeRecords = list(transactionsCollection.find({"user": username, "transaction_type": "income"}))
+    expenseRecords = list(transactionsCollection.find({"user": username, "transaction_type": "expense"}))
 
     accounts_summary = {}
     for account in list_of_accounts:
@@ -155,16 +162,18 @@ def dashboard(username):
         }
 
     # Retrieve income and expense records from the database for the specific user
-    income_records = list(incomeCollection.find({
+    income_records = list(transactionsCollection.find({
         "$and": [
             {"user": username},
+            {"transaction_type": "income"},
             {"date": {"$gte": datetime.combine(date.today(), datetime.min.time()),
                       "$lt": datetime.combine(date.today(), datetime.max.time())}}
         ]
     }))
-    expense_records = list(expenseCollection.find({
+    expense_records = list(transactionsCollection.find({
         "$and": [
             {"user": username},
+            {"transaction_type": "expense"},
             {"date": {"$gte": datetime.combine(date.today(), datetime.min.time()),
                       "$lt": datetime.combine(date.today(), datetime.max.time())}}
         ]
@@ -183,55 +192,24 @@ def export_data(username):
         start_date_str = request.form['start_date']
         end_date_str = request.form['end_date']
         account = request.form['account']
+        transaction_type = request.form['transaction_type']
 
         start_date = datetime.strptime(start_date_str, '%Y-%m-%d') if start_date_str else None
         end_date = datetime.strptime(end_date_str, '%Y-%m-%d') if end_date_str else None
 
         # Get filtered income and expense records from the database
-        income_records = list(incomeCollection.find({
+        records = list(transactionsCollection.find({
             "$and": [
                 {"user": username},
+                {"transaction_type": transaction_type} if transaction_type else {},
                 {"date": {"$gte": start_date, "$lte": end_date}} if start_date and end_date else {},
                 {"account": account} if account else {}
             ]
         }))
 
-        expense_records = list(expenseCollection.find({
-            "$and": [
-                {"user": username},
-                {"date": {"$gte": start_date, "$lte": end_date}} if start_date and end_date else {},
-                {"account": account} if account else {}
-            ]
-        }))
-
-        if request.form.get('export_pdf') == 'true':
-            # Generate PDF
-            buffer = BytesIO()
-            c = canvas.Canvas(buffer, pagesize=letter)
-
-            # Add income records to PDF
-            c.drawString(100, 800, 'Income Records:')
-            y_offset = 780
-            for record in income_records:
-                c.drawString(100, y_offset, f"Amount: {record['amount']}, Description: {record['description']}")
-                y_offset -= 15
-
-            # Add expense records to PDF
-            c.drawString(100, y_offset, 'Expense Records:')
-            y_offset -= 20
-            for record in expense_records:
-                c.drawString(100, y_offset, f"Amount: {record['amount']}, Description: {record['description']}")
-                y_offset -= 15
-
-            c.save()
-            buffer.seek(0)
-
-            return send_file(buffer, mimetype='application/pdf', as_attachment=True,
-                             download_name=f'export_{username}.pdf')
-
-        else:
+        if request.form.get('export_csv') == 'true':
             # Generate CSV
-            csv_data = generate_csv(income_records, expense_records)
+            csv_data = generate_csv(records)
 
             # Prepare the response as a downloadable file
             response = Response(
@@ -246,21 +224,20 @@ def export_data(username):
     return render_template('export.html', accounts=accounts, username=username)
 
 
-def generate_csv(income_records, expense_records):
+def generate_csv(records):
     # Prepare the CSV data using StringIO
     csv_buffer = StringIO()
     csv_writer = csv.writer(csv_buffer)
 
     # Write header row
-    csv_writer.writerow(["Type", "Amount", "Description", "Account", "Category", "Date"])
+    csv_writer.writerow(["Type", "Amount", "Description", "Account", "Income Category", "Expense Category", "Date"])
 
-    # Write income records
-    for record in income_records:
-        csv_writer.writerow(["Income", record["amount"], record["description"], record["account"], record["category"], record["date"]])
+    # Write transaction records
+    for record in records:
+        csv_writer.writerow(
+            [record["transaction_type"], record["amount"], record["description"], record["account"],
 
-    # Write expense records
-    for record in expense_records:
-        csv_writer.writerow(["Expense", record["amount"], record["description"], record["account"], record["category"], record["date"]])
+             record["income_category"], record["expense_category"], record["date"]])
 
     # Get the CSV data as a string
     csv_data = csv_buffer.getvalue()
