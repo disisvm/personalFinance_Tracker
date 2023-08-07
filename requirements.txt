@@ -5,3 +5,5 @@ python-dotenv==1.0.0
 
 DateTime~=5.1
 reportlab~=4.0.4
+matplotlib~=3.7.2
+pandas~=2.0.3
