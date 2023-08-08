@@ -1,0 +1,101 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Personal Finance Tracker - Budget Management</title>
+    <link rel="stylesheet" type="text/css" href="{{ url_for('static', filename='css/style.css') }}">
+    <style>
+        /* Additional CSS styling for the pie chart */
+        .pie-chart-container {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            margin-top: 20px;
+        }
+
+        .pie-chart {
+            max-width: 600px; /* Adjust the width as needed */
+            width: 100%;
+            box-shadow: 0px 0px 10px rgba(0, 0, 0, 0.2);
+            border-radius: 10px;
+        }
+
+        h1 {
+            color: #333;
+            font-size: 24px;
+            margin-bottom: 20px;
+        }
+
+        /* Styling for budget and expenses sections */
+        .budget-info {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-top: 20px;
+        }
+
+        .budget-values {
+            margin-right: 20px;
+            font-size: 18px;
+            color: #555;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 20px;
+        }
+
+        th, td {
+            padding: 10px;
+            text-align: left;
+            border-bottom: 1px solid #ddd;
+        }
+
+        th {
+            background-color: #f5f5f5;
+        }
+
+        /* Back to Dashboard link */
+        a {
+            display: inline-block;
+            margin-top: 20px;
+            color: #007bff;
+            text-decoration: none;
+        }
+
+        a:hover {
+            text-decoration: underline;
+        }
+
+        /* Highlight the graph section */
+        .graph-section {
+            background-color: #f5f5f5;
+            border-radius: 10px;
+            padding: 20px;
+            margin-top: 20px;
+            box-shadow: 0px 0px 10px rgba(0, 0, 0, 0.2);
+        }
+    </style>
+</head>
+<body>
+    <h1>Budget Management</h1>
+    <p>Welcome, {{ username }}!</p>
+
+    <div class="budget-info">
+        <div class="budget-values">
+            <h2>Current Budget: ${{ budgets }}</h2>
+            <h2>Total Expenses: ${{ total_expenses }}</h2>
+            <h2>Remaining Budget: ${{ remaining_budget }}</h2>
+        </div>
+    </div>
+
+    <div class="graph-section">
+        <h2>Budget Consumption</h2>
+        <div class="pie-chart-container">
+            <img class="pie-chart" src="http://127.0.0.1:5000/static/chart.png" alt="Budget Pie Chart">
+        </div>
+    </div>
+
+    <a href="{{ url_for('dashboard', username=username) }}">Back to Dashboard</a>
+</body>
+</html>
