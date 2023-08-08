@@ -7,7 +7,7 @@ import matplotlib
 import matplotlib.pyplot as plt
 import pandas as pd
 from bson import ObjectId
-from flask import Flask, Response
+from flask import Flask, Response, flash
 from flask import request, redirect, url_for, render_template
 
 import db_connection as mongo
@@ -15,6 +15,7 @@ import db_connection as mongo
 matplotlib.use('Agg')
 
 app = Flask(__name__)
+app.secret_key = '3308'
 
 # Collection variables
 users = mongo.db.users
@@ -428,7 +429,7 @@ def budget_management(username):
                            budgets=budget_value,
                            total_expenses=total_expenses,
                            remaining_budget=remaining_budget,
-                           goals = goal_value,
+                           goals=goal_value,
                            total_income=total_income,
                            remaining_goal=remaining_goal
                            )
@@ -576,6 +577,29 @@ def account_settings(username):
                            settings=settings,
                            income_categories=income_categories,
                            expense_categories=expense_categories)
+
+
+@app.route('/change_password/<username>', methods=['POST', 'GET'])
+def change_password(username):
+    if request.method == 'POST':
+        old_password = request.form['old_password']
+        new_password = request.form['new_password']
+        confirm_password = request.form['confirm_password']
+
+        # Check if the old password matches the one in the database
+        user = users.find_one({'user': username, 'password': old_password})
+        if user:
+            if new_password == confirm_password:
+                # Update the password in the database
+                users.update_one({'user': username}, {"$set": {'password': new_password}})
+                flash('Password updated successfully!', 'success')
+                return render_template('change_password.html', username=username)
+            else:
+                flash('New password and confirm password do not match.', 'error')
+        else:
+            flash('Incorrect old password.', 'error')
+
+    return render_template('change_password.html', username=username)
 
 
 @app.route('/logout', methods=['POST', 'GET'])
