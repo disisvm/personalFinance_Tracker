@@ -4,11 +4,11 @@ from datetime import datetime, date
 from io import StringIO
 
 import matplotlib
+import matplotlib.pyplot as plt
 from flask import Flask, Response
 from flask import request, redirect, url_for, render_template
 
 import db_connection as mongo
-import matplotlib.pyplot as plt
 
 matplotlib.use('Agg')
 
@@ -255,6 +255,50 @@ def generate_csv(records):
     return csv_data
 
 
+@app.route('/budget_management/<username>')
+def budget_management(username):
+    # Get current month and year
+    today = datetime.today()
+    current_month = today.month
+    current_year = today.year
+
+    # Fetch budget
+    budget_value = budget(username)
+
+    # Fetch expenses for the current month
+    expense_records = transactionsCollection.find({
+        'user': username,
+        'transaction_type': 'expense',
+        'date': {'$gte': datetime.combine(datetime(current_year, current_month, 1), datetime.min.time()),
+                 '$lt': datetime.combine(datetime(current_year, current_month + 1, 1), datetime.min.time())}
+    })
+
+    # Calculate total expenses and remaining budget
+    total_expenses = sum([d['amount'] for d in expense_records if 'amount' in d])
+    remaining_budget = budget_value - total_expenses
+
+    # Create a pie chart
+    labels = ['Expenses', 'Remaining Budget']
+    values = [total_expenses, remaining_budget]
+    colors = ['#FF9999', '#66B2FF']
+    plt.pie(values, labels=labels, colors=colors, autopct='%1.1f%%', startangle=90)
+    plt.axis('equal')  # Equal aspect ratio ensures the pie chart is circular.
+
+    # Save the pie chart to the static directory
+    chart_filename = 'chart.png'
+    static_dir = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'static')
+    chart_path = os.path.join(static_dir, chart_filename)
+    plt.savefig(chart_path, dpi=1000)
+    plt.close()
+
+    return render_template('budget_management.html',
+                           username=username,
+                           budgets=budget_value,
+                           chart_path=chart_path,
+                           total_expenses=total_expenses,
+                           remaining_budget=remaining_budget)
+
+
 @app.route('/transaction_history/<username>', methods=['GET'])
 def transaction_history(username):
     search = request.args.get('search', '')
@@ -325,58 +369,14 @@ def transaction_history(username):
                            accounts=accounts)
 
 
-@app.route('/budget_management/<username>')
-def budget_management(username):
-    # Get current month and year
-    today = datetime.today()
-    current_month = today.month
-    current_year = today.year
-
-    # Fetch budget
-    budget_value = budget(username)
-
-    # Fetch expenses for the current month
-    expense_records = transactionsCollection.find({
-        'user': username,
-        'transaction_type': 'expense',
-        'date': {'$gte': datetime.combine(datetime(current_year, current_month, 1), datetime.min.time()),
-                 '$lt': datetime.combine(datetime(current_year, current_month + 1, 1), datetime.min.time())}
-    })
-
-    # Calculate total expenses and remaining budget
-    total_expenses = sum([d['amount'] for d in expense_records if 'amount' in d])
-    remaining_budget = budget_value - total_expenses
-
-    # Create a pie chart
-    labels = ['Expenses', 'Remaining Budget']
-    values = [total_expenses, remaining_budget]
-    colors = ['#FF9999', '#66B2FF']
-    plt.pie(values, labels=labels, colors=colors, autopct='%1.1f%%', startangle=90)
-    plt.axis('equal')  # Equal aspect ratio ensures the pie chart is circular.
-
-    # Save the pie chart to the static directory
-    chart_filename = 'chart.png'
-    static_dir = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'static')
-    chart_path = os.path.join(static_dir, chart_filename)
-    plt.savefig(chart_path, dpi=1000)
-    plt.close()
-
-    return render_template('budget_management.html',
-                           username=username,
-                           budgets=budget_value,
-                           chart_path=chart_path,
-                           total_expenses=total_expenses,
-                           remaining_budget=remaining_budget)
-
-
-@app.route('/logout', methods=['POST', 'GET'])
-def logout():
+@app.route('/settings', methods=['POST', 'GET'])
+def settings():
     # Redirect the user to the login page
     return redirect(url_for('login'))
 
 
-@app.route('/settings', methods=['POST', 'GET'])
-def settings():
+@app.route('/logout', methods=['POST', 'GET'])
+def logout():
     # Redirect the user to the login page
     return redirect(url_for('login'))
 
