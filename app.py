@@ -3,6 +3,8 @@ import os
 from datetime import datetime, date
 from io import StringIO
 
+import seaborn as sns
+import pandas as pd
 import matplotlib
 import matplotlib.pyplot as plt
 from flask import Flask, Response
@@ -193,6 +195,67 @@ def dashboard(username):
                            income_records=income_records, expense_records=expense_records)
 
 
+@app.route('/data_visualization/<username>', methods=['GET'])
+def data_visualization(username):
+    # Fetch accounts, income categories, and expense categories
+    accounts = accounts_list(username)  # Retrieve accounts from the accounts collection
+    income_categories = income_category(username)  # Retrieve income categories from the incomeCategory collection
+    expense_categories = expense_category(username)  # Retrieve expense categories from the expenseCategory collection
+    transactions = list(transactionsCollection.find({"user": username}))
+
+    transactions_df = pd.DataFrame(transactions)
+    print(transactions_df.columns)
+    transactions_df['date'] = pd.to_datetime(transactions_df['date'])  # Convert 'date' column to datetime
+
+    # Plot 1: Income and Expense over Months (Line Graph)
+    plt.figure(figsize=(30, 20))
+    plt.subplot(2, 2, 1)
+    sns.lineplot(x='date', y='amount', hue='transaction_type', data=transactions_df)
+    plt.title('Income and Expense over Months')
+    save_plots("plot_1.png")
+
+    # Plot 2: Income Categories (Pie Chart)
+    plt.figure(figsize=(30, 20))
+    plt.subplot(2, 2, 2)
+    sns.set_palette('pastel')
+    plt.pie(transactions_df['amount'], labels=transactions_df['income_category'], autopct='%1.1f%%')
+    plt.title('Income Categories')
+    save_plots("plot_2.png")
+
+    # Plot 3: Expense Categories (Pie Chart)
+    plt.figure(figsize=(30, 20))
+    plt.subplot(2, 2, 3)
+    sns.set_palette('dark')
+    plt.pie(transactions_df['amount'], labels=transactions_df['expense_category'], autopct='%1.1f%%')
+    plt.title('Expense Categories')
+    save_plots("plot_3.png")
+
+    # Plot 4: Income and Expense by Accounts
+    plt.figure(figsize=(30, 20))
+    plt.subplot(2, 2, 4)
+    sns.barplot(x='account', y='amount', hue='transaction_type', data=transactions_df)
+    plt.title('Income and Expense by Accounts')
+    plt.axis('equal')
+    save_plots("plot_4.png")
+
+    plot_filenames = ['plot_1.png', 'plot_2.png', 'plot_3.png', 'plot_4.png']
+
+    return render_template('data_visualization.html',
+                           username=username,
+                           accounts=accounts,
+                           income_categories=income_categories,
+                           expense_categories=expense_categories,
+                           transactions=transactions,
+                           plot_filenames=plot_filenames)
+
+
+def save_plots(filename):
+    plots_dir = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'static')
+    chart_path = os.path.join(plots_dir, filename)
+    plt.savefig(chart_path, dpi=1000)
+    plt.close()
+
+
 @app.route('/export/<username>', methods=['GET', 'POST'])
 def export_data(username):
     accounts = accounts_list(username)
@@ -285,7 +348,7 @@ def budget_management(username):
     plt.axis('equal')  # Equal aspect ratio ensures the pie chart is circular.
 
     # Save the pie chart to the static directory
-    chart_filename = 'chart.png'
+    chart_filename = 'budget_pie-chart.png'
     static_dir = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'static')
     chart_path = os.path.join(static_dir, chart_filename)
     plt.savefig(chart_path, dpi=1000)

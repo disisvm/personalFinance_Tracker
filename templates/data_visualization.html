@@ -1,0 +1,59 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Personal Finance Tracker - Data Visualization</title>
+    <link rel="stylesheet" type="text/css" href="{{ url_for('static', filename='css/style.css') }}">
+    <style>
+        /* Additional CSS styling for the plots */
+        .plot-container {
+            display: flex;
+            justify-content: center;
+            margin-top: 20px;
+        }
+
+        .plot {
+            max-width: 800px; /* Adjust the width as needed */
+            width: 100%;
+            box-shadow: 0px 0px 10px rgba(0, 0, 0, 0.2);
+        }
+
+        h1 {
+            color: #333;
+            font-size: 24px;
+            margin-bottom: 20px;
+        }
+
+        /* Back to Dashboard link */
+        a {
+            display: inline-block;
+            margin-top: 20px;
+            color: #007bff;
+            text-decoration: none;
+        }
+
+        a:hover {
+            text-decoration: underline;
+        }
+    </style>
+</head>
+<body>
+    <h1>Data Visualization</h1>
+    <p>Welcome, {{ username }}!</p>
+
+    <!-- Plot Containers -->
+    <div class="plot-container">
+        <img class="plot" src="http://127.0.0.1:5000/static/plot_1.png" alt="Income and Expense over Months">
+    </div>
+    <div class="plot-container">
+        <img class="plot" src="http://127.0.0.1:5000/static/plot_2.png" alt="Income Categories">
+    </div>
+    <div class="plot-container">
+        <img class="plot" src="http://127.0.0.1:5000/static/plot_3.png" alt="Expense Categories">
+    </div>
+    <div class="plot-container">
+        <img class="plot" src="http://127.0.0.1:5000/static/plot_4.png" alt="Income and Expense by Accounts">
+    </div>
+
+    <a href="{{ url_for('dashboard', username=username) }}">Back to Dashboard</a>
+</body>
+</html>
