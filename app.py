@@ -115,6 +115,7 @@ def register():
 
         # store user in database
         users.insert_one({'user': username, 'password': password})
+        settingsCollection.insert_one({'user': username, 'budget': 0, 'goal': 0})
 
         # Redirect to login page
         return redirect('/login')
@@ -136,6 +137,7 @@ def add_income(username):
                                            'description': description,
                                            'account': account,
                                            'income_category': category,
+                                           'expense_category': "",
                                            'transaction_type': 'income',
                                            'date': datetime.now()})
 
@@ -159,6 +161,7 @@ def add_expense(username):
                                            'description': description,
                                            'account': account,
                                            'expense_category': category,
+                                           'income_category': "",
                                            'transaction_type': 'expense',
                                            'date': datetime.now()})
 
