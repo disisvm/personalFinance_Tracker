@@ -3,10 +3,9 @@ import os
 from datetime import datetime, date
 from io import StringIO
 
-import seaborn as sns
-import pandas as pd
 import matplotlib
 import matplotlib.pyplot as plt
+import pandas as pd
 from flask import Flask, Response
 from flask import request, redirect, url_for, render_template
 
@@ -198,44 +197,74 @@ def dashboard(username):
 @app.route('/data_visualization/<username>', methods=['GET'])
 def data_visualization(username):
     # Fetch accounts, income categories, and expense categories
-    accounts = accounts_list(username)  # Retrieve accounts from the accounts collection
-    income_categories = income_category(username)  # Retrieve income categories from the incomeCategory collection
-    expense_categories = expense_category(username)  # Retrieve expense categories from the expenseCategory collection
+    accounts = accounts_list(username)
+    income_categories = income_category(username)
+    expense_categories = expense_category(username)
     transactions = list(transactionsCollection.find({"user": username}))
-
     transactions_df = pd.DataFrame(transactions)
-    print(transactions_df.columns)
+
+    # Apply Filters
+    transaction_type = request.args.get('transaction_type')
+    expense_categoryFilter = request.args.get('expense_categoryFilter')
+    income_categoryFilter = request.args.get('income_categoryFilter')
+    account_filter = request.args.get('account')
+    num_months = int(request.args.get('num_months', default=6))
+
+    if transaction_type:
+        transactions_df = transactions_df[transactions_df['transaction_type'] == transaction_type]
+
+    if income_categoryFilter or expense_categoryFilter:
+
+        if income_categoryFilter:
+            transactions_df = transactions_df[transactions_df['income_category'] == income_categoryFilter]
+        else:
+            transactions_df = transactions_df[transactions_df['expense_category'] == expense_categoryFilter]
+
+    if account_filter:
+        transactions_df = transactions_df[transactions_df['account'] == account_filter]
+
+    start_date = transactions_df['date'].max() - pd.DateOffset(months=num_months)
+    transactions_df = transactions_df[transactions_df['date'] >= start_date]
+
     transactions_df['date'] = pd.to_datetime(transactions_df['date'])  # Convert 'date' column to datetime
+    transactions_df['month-year'] = transactions_df['date'].dt.to_period('M').astype(str)  # Convert to string
 
     # Plot 1: Income and Expense over Months (Line Graph)
-    plt.figure(figsize=(30, 20))
-    plt.subplot(2, 2, 1)
-    sns.lineplot(x='date', y='amount', hue='transaction_type', data=transactions_df)
+
+    plt.plot(transactions_df[transactions_df['transaction_type'] == 'income']['month-year'],
+             transactions_df[transactions_df['transaction_type'] == 'income']['amount'],
+             label='Income', marker='o')
+    plt.plot(transactions_df[transactions_df['transaction_type'] == 'expense']['month-year'],
+             transactions_df[transactions_df['transaction_type'] == 'expense']['amount'],
+             label='Expense', marker='o')
+    plt.xlabel('Year-Month')
+    plt.ylabel('Amount')
     plt.title('Income and Expense over Months')
+    plt.legend()
     save_plots("plot_1.png")
 
     # Plot 2: Income Categories (Pie Chart)
-    plt.figure(figsize=(30, 20))
-    plt.subplot(2, 2, 2)
-    sns.set_palette('pastel')
-    plt.pie(transactions_df['amount'], labels=transactions_df['income_category'], autopct='%1.1f%%')
+
+    income_data = transactions_df.groupby('income_category')['amount'].sum()
+    plt.pie(income_data, labels=income_data.index, autopct='%1.1f%%')
     plt.title('Income Categories')
     save_plots("plot_2.png")
 
     # Plot 3: Expense Categories (Pie Chart)
-    plt.figure(figsize=(30, 20))
-    plt.subplot(2, 2, 3)
-    sns.set_palette('dark')
-    plt.pie(transactions_df['amount'], labels=transactions_df['expense_category'], autopct='%1.1f%%')
+
+    expense_data = transactions_df.groupby('expense_category')['amount'].sum()
+    plt.pie(expense_data, labels=expense_data.index, autopct='%1.1f%%')
     plt.title('Expense Categories')
     save_plots("plot_3.png")
 
     # Plot 4: Income and Expense by Accounts
-    plt.figure(figsize=(30, 20))
-    plt.subplot(2, 2, 4)
-    sns.barplot(x='account', y='amount', hue='transaction_type', data=transactions_df)
+
+    account_data = transactions_df.groupby(['account', 'transaction_type'])['amount'].sum().unstack()
+    account_data.plot(kind='bar', stacked=True)
     plt.title('Income and Expense by Accounts')
-    plt.axis('equal')
+    plt.xlabel('Account')
+    plt.ylabel('Amount')
+    plt.legend()
     save_plots("plot_4.png")
 
     plot_filenames = ['plot_1.png', 'plot_2.png', 'plot_3.png', 'plot_4.png']
@@ -245,6 +274,8 @@ def data_visualization(username):
                            accounts=accounts,
                            income_categories=income_categories,
                            expense_categories=expense_categories,
+                           expense_categoryFilter=expense_categoryFilter,
+                           income_categoryFilter=income_categoryFilter,
                            transactions=transactions,
                            plot_filenames=plot_filenames)
 
@@ -252,7 +283,7 @@ def data_visualization(username):
 def save_plots(filename):
     plots_dir = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'static')
     chart_path = os.path.join(plots_dir, filename)
-    plt.savefig(chart_path, dpi=1000)
+    plt.savefig(chart_path, bbox_inches='tight', dpi=500)
     plt.close()
 
 

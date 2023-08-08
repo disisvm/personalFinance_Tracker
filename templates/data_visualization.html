@@ -3,7 +3,7 @@
 <head>
     <title>Personal Finance Tracker - Data Visualization</title>
     <link rel="stylesheet" type="text/css" href="{{ url_for('static', filename='css/style.css') }}">
-    <style>
+<style>
         /* Additional CSS styling for the plots */
         .plot-container {
             display: flex;
@@ -34,26 +34,87 @@
         a:hover {
             text-decoration: underline;
         }
+
+        /* Add hover effect to plot containers */
+        .plot-container {
+            position: relative;
+            overflow: hidden;
+            transition: transform 0.3s;
+        }
+
+        .plot-container:hover {
+            transform: scale(1.05);
+            z-index: 1;
+        }
+
+        .plot-container {
+            background-color: #f5f5f5;
+            border-radius: 10px;
+            padding: 20px;
+            margin-top: 20px;
+            box-shadow: 0px 0px 10px rgba(0, 0, 0, 0.2);
+        }
+
     </style>
 </head>
 <body>
-    <h1>Data Visualization</h1>
-    <p>Welcome, {{ username }}!</p>
+<h1>Data Visualization</h1>
+<p>Welcome, {{ username }}!</p>
 
-    <!-- Plot Containers -->
+<form action="{{ url_for('data_visualization', username=username) }}" method="GET">
+    <label for="transaction_type">Transaction Type:</label>
+    <select name="transaction_type">
+        <option value="">All</option>
+        <option value="income">Income</option>
+        <option value="expense">Expense</option>
+    </select>
+
+    <label for="account">Account:</label>
+    <select name="account">
+        <option value="">All</option>
+        {% for account in accounts %}
+        <option value="{{ account }}">{{ account }}</option>
+        {% endfor %}
+    </select>
+
+
+    <label for="income_categoryFilter">Income Category:</label>
+    <select name="income_categoryFilter">
+        <option value="">All</option>
+        {% for category in income_categories %}
+        <option value="{{ category }}">{{ category }}</option>
+        {% endfor %}
+    </select>
+    <label for="expense_categoryFilter">Expense Category:</label>
+    <select name="expense_categoryFilter">
+        <option value="">All</option>
+        {% for category in expense_categories %}
+        <option value="{{ category }}">{{ category }}</option>
+        {% endfor %}
+    </select>
+
+
+    <label for="num_months">Previous Months of Data:</label>
+    <input type="number" name="num_months" value="6">
+
+    <button type="submit">Apply Filters</button>
+</form>
+
+<p>Note: The filters are applied on all the graphs.</p>
+<!-- Plot Containers -->
     <div class="plot-container">
-        <img class="plot" src="http://127.0.0.1:5000/static/plot_1.png" alt="Income and Expense over Months">
+        <img class="plot" src="{{ url_for('static', filename=plot_filenames[0]) }}" alt="Income and Expense over Months">
     </div>
     <div class="plot-container">
-        <img class="plot" src="http://127.0.0.1:5000/static/plot_2.png" alt="Income Categories">
+        <img class="plot" src="{{ url_for('static', filename=plot_filenames[1]) }}" alt="Income Categories">
     </div>
     <div class="plot-container">
-        <img class="plot" src="http://127.0.0.1:5000/static/plot_3.png" alt="Expense Categories">
+        <img class="plot" src="{{ url_for('static', filename=plot_filenames[2]) }}" alt="Expense Categories">
     </div>
     <div class="plot-container">
-        <img class="plot" src="http://127.0.0.1:5000/static/plot_4.png" alt="Income and Expense by Accounts">
+        <img class="plot" src="{{ url_for('static', filename=plot_filenames[3]) }}" alt="Income and Expense by Accounts">
     </div>
 
-    <a href="{{ url_for('dashboard', username=username) }}">Back to Dashboard</a>
+<a href="{{ url_for('dashboard', username=username) }}">Back to Dashboard</a>
 </body>
 </html>
