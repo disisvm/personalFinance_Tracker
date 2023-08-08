@@ -1,0 +1,139 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Account Settings</title>
+        <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 20px;
+        }
+
+        h1 {
+            color: #333;
+            font-size: 24px;
+            margin-bottom: 20px;
+        }
+
+        form {
+            margin-top: 20px;
+            border: 1px solid #ddd;
+            padding: 20px;
+            border-radius: 5px;
+            background-color: #f5f5f5;
+        }
+
+        ul {
+            list-style: none;
+            padding-left: 0;
+        }
+
+        li {
+            margin: 10px 0;
+        }
+
+        input[type="text"] {
+            padding: 5px;
+            width: 200px;
+        }
+
+        button {
+            padding: 5px 10px;
+            background-color: #007bff;
+            color: #fff;
+            border: none;
+            cursor: pointer;
+        }
+
+        button:hover {
+            background-color: #0056b3;
+        }
+
+        a {
+            display: inline-block;
+            margin-top: 20px;
+            color: #007bff;
+            text-decoration: none;
+        }
+
+        a:hover {
+            text-decoration: underline;
+        }
+
+        p {
+            margin-top: 20px;
+            font-size: 14px;
+            color: #555;
+        }
+    </style>
+</head>
+<body>
+    <h1>Account Settings</h1>
+    <p>Welcome, {{ username }}!</p>
+
+    <form method="POST">
+        <h2>Update Goal and Budget</h2>
+        <label for="new_goal">New Goal:</label>
+        <input type="number" name="new_goal" value="{{ settings['goal'] }}" required><br>
+        <br>
+        <label for="new_budget">New Budget:</label>
+        <input type="number" name="new_budget" value="{{ settings['budget'] }}" required><br>
+        <br>
+        <button type="submit">Update</button>
+        <br>
+    </form>
+
+        <form method="POST">
+        <!-- Display Income Categories -->
+        <h2>Income Categories</h2>
+        <ul>
+            {% for category in income_categories %}
+            <li>
+                {{ category['name'] }}
+                {% if not category['default'] %}
+                <button type="submit" name="action" value="delete_income">Delete</button>
+                <input type="hidden" name="income_category" value="{{ category['_id'] }}">
+                <!-- Edit Income Category -->
+                <input type="text" name="edited_income_category" value="{{ category.name }}">
+                <button type="submit" name="action" value="edit_income">Edit</button>
+                {% endif %}
+            </li>
+            {% endfor %}
+            <li>
+                <input type="text" name="new_income_category" placeholder="New Income Category">
+                <button type="submit" name="action" value="add_income">Add</button>
+            </li>
+        </ul>
+
+        <!-- Display Expense Categories -->
+        <h2>Expense Categories</h2>
+        <ul>
+            {% for category in expense_categories %}
+            <li>
+                {{ category['name'] }}
+                {% if not category['default'] %}
+                <button type="submit" name="action" value="delete_expense">Delete</button>
+                <input type="hidden" name="expense_category" value="{{ category['_id'] }}">
+                <!-- Edit Expense Category -->
+                <input type="text" name="edited_expense_category" value="{{ category.name }}">
+                <button type="submit" name="action" value="edit_expense">Edit</button>
+                {% endif %}
+            </li>
+            {% endfor %}
+            <li>
+                <input type="text" name="new_expense_category" placeholder="New Expense Category">
+                <button type="submit" name="action" value="add_expense">Add</button>
+            </li>
+        </ul>
+    </form>
+
+    <p>Note: Deleting or editing a category will not affect any previous transactions recorded in that category.</p>
+
+    <br>
+    <a href="{{ url_for('change_password', username=username) }}">Change Password.</a>
+    <br>
+    <br>
+
+    <a href="{{ url_for('dashboard', username=username) }}">Back to Dashboard</a>
+</body>
+</html>

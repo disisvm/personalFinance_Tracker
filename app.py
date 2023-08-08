@@ -6,6 +6,7 @@ from io import StringIO
 import matplotlib
 import matplotlib.pyplot as plt
 import pandas as pd
+from bson import ObjectId
 from flask import Flask, Response
 from flask import request, redirect, url_for, render_template
 
@@ -33,24 +34,35 @@ def accounts_list(username):
 
 
 def income_category(username):
-    income_categoryList = list(incomeCategoryCollection.find({"$or": [{"user": username}, {"default": True}]}))
+    income_categoryList = list(incomeCategoryCollection.find({
+        "$and": [
+            {"$or": [{"user": username}, {"default": True}]},
+            {"is_active": 1}
+        ]
+    }))
     values_list = [d['name'] for d in income_categoryList if 'name' in d]
 
     return values_list
 
 
 def expense_category(username):
-    expense_categoryList = list(expenseCategoryCollection.find({"$or": [{"user": username}, {"default": True}]}))
+    expense_categoryList = list(expenseCategoryCollection.find({
+        "$and": [
+            {"$or": [{"user": username}, {"default": True}]},
+            {"is_active": 1}
+        ]
+    }))
     values_list = [d['name'] for d in expense_categoryList if 'name' in d]
 
     return values_list
 
 
-def budget(username):
+def budget_goal(username):
     settingsList = settingsCollection.find_one({"user": username})
-    value = settingsList.get("budget")
+    budget_value = settingsList.get("budget")
+    goal_value = settingsList.get("goal")
 
-    return value
+    return budget_value, goal_value
 
 
 @app.route('/', methods=['GET', 'POST'])
@@ -357,7 +369,7 @@ def budget_management(username):
     current_year = today.year
 
     # Fetch budget
-    budget_value = budget(username)
+    budget_value, goal_value = budget_goal(username)
 
     # Fetch expenses for the current month
     expense_records = transactionsCollection.find({
@@ -381,16 +393,45 @@ def budget_management(username):
     # Save the pie chart to the static directory
     chart_filename = 'budget_pie-chart.png'
     static_dir = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'static')
-    chart_path = os.path.join(static_dir, chart_filename)
-    plt.savefig(chart_path, dpi=1000)
+    budget_chart_path = os.path.join(static_dir, chart_filename)
+    plt.savefig(budget_chart_path, dpi=1000)
+    plt.close()
+
+    # Fetch income for the current month
+    income_records = transactionsCollection.find({
+        'user': username,
+        'transaction_type': 'income',
+        'date': {'$gte': datetime.combine(datetime(current_year, current_month, 1), datetime.min.time()),
+                 '$lt': datetime.combine(datetime(current_year, current_month + 1, 1), datetime.min.time())}
+    })
+
+    # Calculate total income and remaining goal
+    total_income = sum([d['amount'] for d in income_records if 'amount' in d])
+    remaining_goal = budget_value - total_income
+
+    # Create a pie chart
+    labels = ['Income', 'Remaining Goal']
+    values = [total_income, remaining_goal]
+    colors = ['#FF9999', '#66B2FF']
+    plt.pie(values, labels=labels, colors=colors, autopct='%1.1f%%', startangle=90)
+    plt.axis('equal')  # Equal aspect ratio ensures the pie chart is circular.
+
+    # Save the pie chart to the static directory
+    chart_filename = 'goal_pie-chart.png'
+    static_dir = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'static')
+    goal_chart_path = os.path.join(static_dir, chart_filename)
+    plt.savefig(goal_chart_path, dpi=1000)
     plt.close()
 
     return render_template('budget_management.html',
                            username=username,
                            budgets=budget_value,
-                           chart_path=chart_path,
                            total_expenses=total_expenses,
-                           remaining_budget=remaining_budget)
+                           remaining_budget=remaining_budget,
+                           goals = goal_value,
+                           total_income=total_income,
+                           remaining_goal=remaining_goal
+                           )
 
 
 @app.route('/transaction_history/<username>', methods=['GET'])
@@ -463,10 +504,78 @@ def transaction_history(username):
                            accounts=accounts)
 
 
-@app.route('/settings', methods=['POST', 'GET'])
-def settings():
-    # Redirect the user to the login page
-    return redirect(url_for('login'))
+@app.route('/account_settings/<username>', methods=['GET', 'POST'])
+def account_settings(username):
+    if request.method == 'POST':
+        # Update Goal Value
+        new_goal = int(request.form.get('new_goal'))
+        settingsCollection.update_one({'user': username}, {'$set': {'goal': new_goal}})
+
+        # Update Budget Value
+        new_budget = int(request.form.get('new_budget'))
+        settingsCollection.update_one({'user': username}, {'$set': {'budget': new_budget}})
+
+        return redirect(url_for('account_settings', username=username))
+
+    settings = settingsCollection.find_one({'user': username})
+    income_categories = incomeCategoryCollection.find({'user': username})
+    expense_categories = expenseCategoryCollection.find({'user': username})
+
+    income_categories = incomeCategoryCollection.find({
+        "$and": [
+            {"$or": [{"user": username}, {"default": True}]},
+            {"is_active": 1}
+        ]
+    })
+    expense_categories = expenseCategoryCollection.find({
+        "$and": [
+            {"$or": [{"user": username}, {"default": True}]},
+            {"is_active": 1}
+        ]
+    })
+
+    if request.method == 'POST':
+        action = request.form.get('action')
+
+        if action == 'add_income':
+            new_income_category = request.form.get('new_income_category')
+            incomeCategoryCollection.insert_one({
+                'name': new_income_category,
+                'user': username,
+                'is_active': 1
+            })
+
+        elif action == 'add_expense':
+            new_expense_category = request.form.get('new_expense_category')
+            expenseCategoryCollection.insert_one({
+                'name': new_expense_category,
+                'user': username,
+                'is_active': 1
+            })
+
+        elif action == 'delete_income':
+            category_id = request.form.get('income_category')
+            incomeCategoryCollection.update_one({'_id': ObjectId(category_id)}, {"$set": {'is_active': 0}})
+
+        elif action == 'delete_expense':
+            category_id = request.form.get('expense_category')
+            expenseCategoryCollection.update_one({'_id': ObjectId(category_id)}, {"$set": {'is_active': 0}})
+
+        elif action == 'edit_income':
+            category_id = request.form.get('income_category')
+            updated_name = request.form.get('edited_income_category')
+            incomeCategoryCollection.update_one({'_id': ObjectId(category_id)}, {"$set": {'name': updated_name}})
+
+        elif action == 'edit_expense':
+            category_id = request.form.get('expense_category')
+            updated_name = request.form.get('edited_expense_category')
+            expenseCategoryCollection.update_one({'_id': ObjectId(category_id)}, {"$set": {'name': updated_name}})
+
+    return render_template('account_settings.html',
+                           username=username,
+                           settings=settings,
+                           income_categories=income_categories,
+                           expense_categories=expense_categories)
 
 
 @app.route('/logout', methods=['POST', 'GET'])
