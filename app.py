@@ -448,7 +448,7 @@ def transaction_history(username):
     start_date = request.args.get('start_date', '')
     end_date = request.args.get('end_date', '')
     sort = request.args.get('sort', '')
-
+#The $or operator provides flexibility by allowing you to search across multiple fields.
     query = {
         'user': username,
         '$or': [
