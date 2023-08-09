@@ -355,9 +355,7 @@ def generate_csv(records):
     # Write transaction records
     for record in records:
         csv_writer.writerow(
-            [record["transaction_type"], record["amount"], record["description"], record["account"],
-
-             record["income_category"], record["expense_category"], record["date"]])
+            [record["transaction_type"], record["amount"], record["description"], record["account"], record["income_category"], record["expense_category"], record["date"]])
 
     # Get the CSV data as a string
     csv_data = csv_buffer.getvalue()
