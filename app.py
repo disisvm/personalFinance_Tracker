@@ -35,12 +35,14 @@ def accounts_list(username):
 
 
 def income_category(username):
+
     income_categoryList = list(incomeCategoryCollection.find({
         "$and": [
             {"$or": [{"user": username}, {"default": True}]},
-            {"is_active": 1}
+            {"is_active": True}
         ]
     }))
+
     values_list = [d['name'] for d in income_categoryList if 'name' in d]
 
     return values_list
@@ -50,7 +52,7 @@ def expense_category(username):
     expense_categoryList = list(expenseCategoryCollection.find({
         "$and": [
             {"$or": [{"user": username}, {"default": True}]},
-            {"is_active": 1}
+            {"is_active": True}
         ]
     }))
     values_list = [d['name'] for d in expense_categoryList if 'name' in d]
@@ -125,6 +127,26 @@ def register():
 
 @app.route('/income/<username>', methods=['GET', 'POST'])
 def add_income(username):
+    # Get current month and year
+    today = datetime.today()
+    current_month = today.month
+    current_year = today.year
+
+    # Fetch income for the current month
+    income_records = transactionsCollection.find({
+        'user': username,
+        'transaction_type': 'income',
+        'date': {'$gte': datetime.combine(datetime(current_year, current_month, 1), datetime.min.time()),
+                 '$lt': datetime.combine(datetime(current_year, current_month + 1, 1), datetime.min.time())}
+    })
+
+    # Fetch budget
+    budget_value, goal_value = budget_goal(username)
+
+    # Calculate total income and remaining goal
+    total_income = sum([d['amount'] for d in income_records if 'amount' in d])
+    remaining_goal = goal_value - total_income
+
     if request.method == 'POST':
         amount = float(request.form['amount'])
         description = request.form['description']
@@ -144,11 +166,31 @@ def add_income(username):
         return redirect(url_for('dashboard', username=username))
 
     return render_template('income.html', accounts=accounts_list(username), username=username,
-                           categories=income_category(username))
+                           categories=income_category(username), remaining_goal=remaining_goal)
 
 
 @app.route('/expenses/<username>', methods=['GET', 'POST'])
 def add_expense(username):
+    # Get current month and year
+    today = datetime.today()
+    current_month = today.month
+    current_year = today.year
+
+    # Fetch expenses for the current month
+    expense_records = transactionsCollection.find({
+        'user': username,
+        'transaction_type': 'expense',
+        'date': {'$gte': datetime.combine(datetime(current_year, current_month, 1), datetime.min.time()),
+                 '$lt': datetime.combine(datetime(current_year, current_month + 1, 1), datetime.min.time())}
+    })
+
+    # Fetch budget
+    budget_value, goal_value = budget_goal(username)
+
+    # Calculate total expenses and remaining budget
+    total_expenses = sum([d['amount'] for d in expense_records if 'amount' in d])
+    remaining_budget = budget_value - total_expenses
+
     if request.method == 'POST':
         amount = float(request.form['amount'])
         description = request.form['description']
@@ -168,7 +210,7 @@ def add_expense(username):
         return redirect(url_for('dashboard', username=username))
 
     return render_template('expenses.html', accounts=accounts_list(username), username=username,
-                           categories=expense_category(username))
+                           categories=expense_category(username), remaining_budget=remaining_budget)
 
 
 @app.route('/dashboard/<username>')
@@ -261,14 +303,15 @@ def data_visualization(username):
 
     # Plot 2: Income Categories (Pie Chart)
 
-    income_data = transactions_df.groupby('income_category')['amount'].sum()
+    income_data = transactions_df[transactions_df['income_category'] != ""].groupby('income_category')['amount'].sum()
     plt.pie(income_data, labels=income_data.index, autopct='%1.1f%%')
     plt.title('Income Categories')
     save_plots("plot_2.png")
 
     # Plot 3: Expense Categories (Pie Chart)
 
-    expense_data = transactions_df.groupby('expense_category')['amount'].sum()
+    expense_data = transactions_df[transactions_df['expense_category'] != ""].groupby('expense_category')[
+        'amount'].sum()
     plt.pie(expense_data, labels=expense_data.index, autopct='%1.1f%%')
     plt.title('Expense Categories')
     save_plots("plot_3.png")
@@ -276,11 +319,17 @@ def data_visualization(username):
     # Plot 4: Income and Expense by Accounts
 
     account_data = transactions_df.groupby(['account', 'transaction_type'])['amount'].sum().unstack()
-    account_data.plot(kind='bar', stacked=True)
+    ax = account_data.plot(kind='bar', stacked=True)
+
     plt.title('Income and Expense by Accounts')
     plt.xlabel('Account')
     plt.ylabel('Amount')
     plt.legend()
+
+    # Add values on top of the bars
+    for container in ax.containers:
+        ax.bar_label(container, fmt='%.2f', label_type='edge', fontsize=10, color='black')
+
     save_plots("plot_4.png")
 
     plot_filenames = ['plot_1.png', 'plot_2.png', 'plot_3.png', 'plot_4.png']
@@ -355,7 +404,8 @@ def generate_csv(records):
     # Write transaction records
     for record in records:
         csv_writer.writerow(
-            [record["transaction_type"], record["amount"], record["description"], record["account"], record["income_category"], record["expense_category"], record["date"]])
+            [record["transaction_type"], record["amount"], record["description"], record["account"],
+             record["income_category"], record["expense_category"], record["date"]])
 
     # Get the CSV data as a string
     csv_data = csv_buffer.getvalue()
@@ -370,7 +420,7 @@ def budget_management(username):
     current_month = today.month
     current_year = today.year
 
-    # Fetch budget
+    # Fetch budget and goal value
     budget_value, goal_value = budget_goal(username)
 
     # Fetch expenses for the current month
@@ -448,7 +498,7 @@ def transaction_history(username):
     start_date = request.args.get('start_date', '')
     end_date = request.args.get('end_date', '')
     sort = request.args.get('sort', '')
-#The $or operator provides flexibility by allowing you to search across multiple field.
+    # The $or operator provides flexibility by allowing you to search across multiple field.
     query = {
         'user': username,
         '$or': [
@@ -525,13 +575,13 @@ def account_settings(username):
 
     income_categories = incomeCategoryCollection.find({
         "$and": [
-            {"$or": [{"user": username}, {"default": True}]},
+            {"user": username},
             {"is_active": 1}
         ]
     })
     expense_categories = expenseCategoryCollection.find({
         "$and": [
-            {"$or": [{"user": username}, {"default": True}]},
+            {"user": username},
             {"is_active": 1}
         ]
     })
@@ -544,7 +594,7 @@ def account_settings(username):
             incomeCategoryCollection.insert_one({
                 'name': new_income_category,
                 'user': username,
-                'is_active': 1
+                'is_active': True
             })
 
         elif action == 'add_expense':
@@ -552,16 +602,16 @@ def account_settings(username):
             expenseCategoryCollection.insert_one({
                 'name': new_expense_category,
                 'user': username,
-                'is_active': 1
+                'is_active': True
             })
 
         elif action == 'delete_income':
             category_id = request.form.get('income_category')
-            incomeCategoryCollection.update_one({'_id': ObjectId(category_id)}, {"$set": {'is_active': 0}})
+            incomeCategoryCollection.update_one({'_id': ObjectId(category_id)}, {"$set": {'is_active': False}})
 
         elif action == 'delete_expense':
             category_id = request.form.get('expense_category')
-            expenseCategoryCollection.update_one({'_id': ObjectId(category_id)}, {"$set": {'is_active': 0}})
+            expenseCategoryCollection.update_one({'_id': ObjectId(category_id)}, {"$set": {'is_active': False}})
 
         elif action == 'edit_income':
             category_id = request.form.get('income_category')
