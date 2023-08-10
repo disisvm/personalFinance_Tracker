@@ -35,7 +35,6 @@ def accounts_list(username):
 
 
 def income_category(username):
-
     income_categoryList = list(incomeCategoryCollection.find({
         "$and": [
             {"$or": [{"user": username}, {"default": True}]},
@@ -558,38 +557,36 @@ def transaction_history(username):
 
 @app.route('/account_settings/<username>', methods=['GET', 'POST'])
 def account_settings(username):
-    if request.method == 'POST':
-        # Update Goal Value
-        new_goal = int(request.form.get('new_goal'))
-        settingsCollection.update_one({'user': username}, {'$set': {'goal': new_goal}})
-
-        # Update Budget Value
-        new_budget = int(request.form.get('new_budget'))
-        settingsCollection.update_one({'user': username}, {'$set': {'budget': new_budget}})
-
-        return redirect(url_for('account_settings', username=username))
-
     settings = settingsCollection.find_one({'user': username})
-    income_categories = incomeCategoryCollection.find({'user': username})
-    expense_categories = expenseCategoryCollection.find({'user': username})
+    accounts = accountsCollection.find({"$and": [{"user": username}, {"is_active": True}]})
 
     income_categories = incomeCategoryCollection.find({
         "$and": [
             {"user": username},
-            {"is_active": 1}
+            {"is_active": True}
         ]
     })
     expense_categories = expenseCategoryCollection.find({
         "$and": [
             {"user": username},
-            {"is_active": 1}
+            {"is_active": True}
         ]
     })
 
     if request.method == 'POST':
-        action = request.form.get('action')
 
-        if action == 'add_income':
+        action = request.form.get("action")
+
+        if action == "update_goal_budget":
+            # Update Goal Value
+            new_goal = int(request.form.get('new_goal'))
+            settingsCollection.update_one({'user': username}, {'$set': {'goal': new_goal}})
+
+            # Update Budget Value
+            new_budget = int(request.form.get('new_budget'))
+            settingsCollection.update_one({'user': username}, {'$set': {'budget': new_budget}})
+
+        elif action == 'add_income':
             new_income_category = request.form.get('new_income_category')
             incomeCategoryCollection.insert_one({
                 'name': new_income_category,
@@ -623,11 +620,24 @@ def account_settings(username):
             updated_name = request.form.get('edited_expense_category')
             expenseCategoryCollection.update_one({'_id': ObjectId(category_id)}, {"$set": {'name': updated_name}})
 
+        elif action == 'add_account':
+            new_account_name = request.form.get('new_account_name')
+            accountsCollection.insert_one({
+                'name': new_account_name,
+                'user': username,
+                'is_active': True,
+            })
+
+        elif action == 'delete_account':
+            account_id = request.form.get('account')
+            accountsCollection.update_one({'_id': ObjectId(account_id)}, {"$set": {'is_active': False}})
+
     return render_template('account_settings.html',
                            username=username,
                            settings=settings,
                            income_categories=income_categories,
-                           expense_categories=expense_categories)
+                           expense_categories=expense_categories,
+                           accounts=accounts)
 
 
 @app.route('/change_password/<username>', methods=['POST', 'GET'])

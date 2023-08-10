@@ -72,31 +72,23 @@
     <p>Welcome, {{ username }}!</p>
 
     <form method="POST">
-        <h2>Update Goal and Budget</h2>
+        <h2>Goal and Budget</h2>
         <label for="new_goal">New Goal:</label>
-        <input type="number" name="new_goal" value="{{ settings['goal'] }}" required><br>
+        <input type="number" id="new_goal" name="new_goal" placeholder="Enter new goal amount" value = "{{ settings['goal'] }}">
         <br>
         <label for="new_budget">New Budget:</label>
-        <input type="number" name="new_budget" value="{{ settings['budget'] }}" required><br>
-        <br>
-        <button type="submit">Update</button>
-        <br>
+        <input type="number" id="new_budget" name="new_budget" placeholder="Enter new budget amount" value="{{ settings['budget'] }}">
+        <button type="submit" name="action" value="update_goal_budget">Update</button>
     </form>
 
-        <form method="POST">
-        <!-- Display Income Categories -->
+    <form method="POST">
         <h2>Income Categories</h2>
         <ul>
             {% for category in income_categories %}
             <li>
                 {{ category['name'] }}
-                {% if not category['default'] %}
                 <button type="submit" name="action" value="delete_income">Delete</button>
                 <input type="hidden" name="income_category" value="{{ category['_id'] }}">
-                <!-- Edit Income Category -->
-                <input type="text" name="edited_income_category" value="{{ category.name }}">
-                <button type="submit" name="action" value="edit_income">Edit</button>
-                {% endif %}
             </li>
             {% endfor %}
             <li>
@@ -104,20 +96,16 @@
                 <button type="submit" name="action" value="add_income">Add</button>
             </li>
         </ul>
+    </form>
 
-        <!-- Display Expense Categories -->
+    <form method="POST">
         <h2>Expense Categories</h2>
         <ul>
             {% for category in expense_categories %}
             <li>
                 {{ category['name'] }}
-                {% if not category['default'] %}
                 <button type="submit" name="action" value="delete_expense">Delete</button>
                 <input type="hidden" name="expense_category" value="{{ category['_id'] }}">
-                <!-- Edit Expense Category -->
-                <input type="text" name="edited_expense_category" value="{{ category.name }}">
-                <button type="submit" name="action" value="edit_expense">Edit</button>
-                {% endif %}
             </li>
             {% endfor %}
             <li>
@@ -127,12 +115,24 @@
         </ul>
     </form>
 
-    <p>Note: Deleting or editing a category will not affect any previous transactions recorded in that category.</p>
+    <form method="POST">
+        <h2>Accounts</h2>
+        <ul>
+            {% for account in accounts %}
+            <li>
+                {{ account['name'] }}
+                <button type="submit" name="action" value="delete_account">Delete</button>
+                <input type="hidden" name="account" value="{{ account['_id'] }}">
+            </li>
+            {% endfor %}
+            <li>
+                <input type="text" name="new_account_name" placeholder="New Account Name">
+                <button type="submit" name="action" value="add_account">Add</button>
+            </li>
+        </ul>
+    </form>
 
-    <br>
-    <a href="{{ url_for('change_password', username=username) }}">Change Password.</a>
-    <br>
-    <br>
+    <p>Note: Deleting a category or account will not affect any previous transactions recorded.</p>
 
     <a href="{{ url_for('dashboard', username=username) }}">Back to Dashboard</a>
 </body>
