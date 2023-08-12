@@ -73,11 +73,11 @@
 
     <form method="POST">
         <h2>Goal and Budget</h2>
-        <label for="new_goal">New Goal:</label>
-        <input type="number" id="new_goal" name="new_goal" placeholder="Enter new goal amount" value = "{{ settings['goal'] }}">
+        <label for="new_goal">Goal:</label>
+        <input type="number" id="new_goal" name="new_goal" placeholder="Enter goal amount" value = "{{ settings['goal'] }}">
         <br>
-        <label for="new_budget">New Budget:</label>
-        <input type="number" id="new_budget" name="new_budget" placeholder="Enter new budget amount" value="{{ settings['budget'] }}">
+        <label for="new_budget">Budget:</label>
+        <input type="number" id="new_budget" name="new_budget" placeholder="Enter budget amount" value="{{ settings['budget'] }}">
         <button type="submit" name="action" value="update_goal_budget">Update</button>
     </form>
 
