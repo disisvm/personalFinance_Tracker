@@ -67,7 +67,7 @@
 
         <label for="filter_type">Transaction Type:</label>
         <select id="filter_type" name="filter_type">
-            <option value="">All</option>
+            <option value="" {% if filter_type == '' %}selected{% endif %}>All</option>
             <option value="income" {% if filter_type == 'income' %}selected{% endif %}>Income</option>
             <option value="expense" {% if filter_type == 'expense' %}selected{% endif %}>Expense</option>
         </select>

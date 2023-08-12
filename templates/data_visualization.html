@@ -64,7 +64,7 @@
 <form action="{{ url_for('data_visualization', username=username) }}" method="GET">
     <label for="transaction_type">Transaction Type:</label>
     <select name="transaction_type">
-        <option value="">All</option>
+        <option value="" selected>All</option>
         <option value="income" selected>Income</option>
         <option value="expense" selected>Expense</option>
     </select>

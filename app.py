@@ -84,7 +84,8 @@ def login():
             if user_details['user'] == username and user_details['password'] == password:
                 return redirect('/dashboard/' + username)
         except TypeError:
-            return render_template('login.html')
+            error_message = 'Invalid username or password.'
+            return render_template('login.html', error_message=error_message)
 
         # Invalid credentials, show error message
         error_message = 'Invalid username or password.'
