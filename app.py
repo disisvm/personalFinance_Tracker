@@ -28,7 +28,13 @@ settingsCollection = mongo.db.settings
 
 
 def accounts_list(username):
-    accountsList = list(accountsCollection.find({"$or": [{"user": username}, {"default": True}]}))
+    accountsList = list(accountsCollection.find({
+        "$and": [
+            {"$or": [{"user": username}, {"default": True}]},
+            {"is_active": True}
+        ]
+    }))
+
     values_list = [d['name'] for d in accountsList if 'name' in d]
 
     return values_list
@@ -285,15 +291,16 @@ def data_visualization(username):
 
     transactions_df['date'] = pd.to_datetime(transactions_df['date'])  # Convert 'date' column to datetime
     transactions_df['month-year'] = transactions_df['date'].dt.to_period('M').astype(str)  # Convert to string
+    # Group by 'month-year' and 'transaction_type', and sum the amounts
+    grouped = transactions_df.groupby(['month-year', 'transaction_type'])['amount'].sum().reset_index()
 
-    # Plot 1: Income and Expense over Months (Line Graph)
+    # Pivot the data to get 'income' and 'expense' columns
+    pivot_df = grouped.pivot(index='month-year', columns='transaction_type', values='amount')
 
-    plt.plot(transactions_df[transactions_df['transaction_type'] == 'income']['month-year'],
-             transactions_df[transactions_df['transaction_type'] == 'income']['amount'],
-             label='Income', marker='o')
-    plt.plot(transactions_df[transactions_df['transaction_type'] == 'expense']['month-year'],
-             transactions_df[transactions_df['transaction_type'] == 'expense']['amount'],
-             label='Expense', marker='o')
+    # Plotting
+    plt.plot(pivot_df.index, pivot_df['income'], label='Income', marker='o')
+    plt.plot(pivot_df.index, pivot_df['expense'], label='Expense', marker='o')
+
     plt.xlabel('Year-Month')
     plt.ylabel('Amount')
     plt.title('Income and Expense over Months')
@@ -318,7 +325,7 @@ def data_visualization(username):
     # Plot 4: Income and Expense by Accounts
 
     account_data = transactions_df.groupby(['account', 'transaction_type'])['amount'].sum().unstack()
-    ax = account_data.plot(kind='bar', stacked=True)
+    ax = account_data.plot(kind='bar')
 
     plt.title('Income and Expense by Accounts')
     plt.xlabel('Account')
