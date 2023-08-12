@@ -95,6 +95,7 @@
                 <input type="text" name="new_income_category" placeholder="New Income Category">
                 <button type="submit" name="action" value="add_income">Add</button>
             </li>
+
         </ul>
     </form>
 
@@ -136,6 +137,7 @@
     <br>
 
     <a href="{{ url_for('change_password', username=username) }}">Change Password.</a>
+    <br>
 
     <a href="{{ url_for('dashboard', username=username) }}">Back to Dashboard</a>
 </body>

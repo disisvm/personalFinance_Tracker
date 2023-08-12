@@ -64,9 +64,9 @@
 <form action="{{ url_for('data_visualization', username=username) }}" method="GET">
     <label for="transaction_type">Transaction Type:</label>
     <select name="transaction_type">
-        <option value="" selected>All</option>
-        <option value="income" selected>Income</option>
-        <option value="expense" selected>Expense</option>
+            <option value="" {% if filter_type == '' %}selected{% endif %}>All</option>
+            <option value="income" {% if filter_type == 'income' %}selected{% endif %}>Income</option>
+            <option value="expense" {% if filter_type == 'expense' %}selected{% endif %}>Expense</option>
     </select>
 
     <label for="account">Account:</label>
@@ -93,7 +93,7 @@
         {% endfor %}
     </select>
 
-    <label for="num_months">Previous Months of Data:</label>
+    <label for="num_months">Previous Months of Data(by deafult 6 months.):</label>
     <input type="number" name="num_months" value="6">
 
     <button type="submit">Apply Filters</button>
