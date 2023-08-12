@@ -134,6 +134,8 @@
 
     <p>Note: Deleting a category or account will not affect any previous transactions recorded.</p>
 
+    <a href="{{ url_for('change_password', username=username) }}">Change Password.</a>
+
     <a href="{{ url_for('dashboard', username=username) }}">Back to Dashboard</a>
 </body>
 </html>
